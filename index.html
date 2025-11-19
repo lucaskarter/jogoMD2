@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-R">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Nave Espacial</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="start-screen">
+        <img src="start.png" id="startButton" alt="Botão Start">
+    </div>
+
+    <div id="game-screen">
+        
+        <div id="alert-light"></div>
+
+        <div id="mission-arrow"></div>
+
+        <div id="game-container">
+            <div id="game-map">
+                <img src="personagemparado.png" id="player">
+                
+                <img src="fogo.gif" id="mission-hotspot" alt="Animação da Missão">
+                <div id="interaction-message">Pressione E para Interagir</div>
+            
+                <div id="elétrica-hotspot"></div>
+                <div id="elétrica-interaction-message">Pressione E para Interagir</div>
+            </div>
+        </div>
+
+        <div id="minimap-icon-container">
+            <img src="map-icon.png" id="minimap-toggle-button" alt="Abrir Mapa">
+        </div>
+
+        <div id="minimap-overlay">
+            <div id="minimap-large-container">
+                <img src="map-large.png" id="minimap-large-image" alt="Mapa da Nave">
+                <div id="minimap-player-dot"></div>
+            </div>
+        </div>
+
+        <div id="puzzle-screen">
+            
+            <div id="puzzle-wrapper">
+                
+                <img src="puzzle_game.png" alt="Jogo de Puzzle" id="puzzle-image">
+
+                <div id="graph-interactive-layer">
+                    <svg id="neon-lines"></svg>
+                    
+                    <div class="node" id="n1"></div> 
+                    <div class="node" id="n2"></div>
+                    <div class="node" id="n3"></div>
+                    <div class="node" id="n4"></div>
+                    <div class="node" id="n5"></div>
+                    <div class="node" id="n6"></div> 
+                    <div class="edge-weight" id="w-n1-n2" style="left: 23.4%; top: 35.5%;"></div>
+                    <div class="edge-weight" id="w-n2-n5" style="left: 28.7%; top: 49.5%;"></div>
+                    <div class="edge-weight" id="w-n1-n5" style="left: 22.7%; top: 65.4%;"></div>
+                    <div class="edge-weight" id="w-n2-n3" style="left: 39.6%; top: 23.1%;"></div>
+                    <div class="edge-weight" id="w-n3-n5" style="left: 38.2%; top: 47.8%;"></div>
+                    <div class="edge-weight" id="w-n4-n5" style="left: 40.7%; top: 71.3%;"></div>
+                    <div class="edge-weight" id="w-n3-n4" style="left: 48.2%; top: 51.4%;"></div>
+                    <div class="edge-weight" id="w-n3-n6" style="left: 56.9%; top: 36.1%;"></div>
+                    <div class="edge-weight" id="w-n4-n6" style="left: 57.4%; top: 65.6%;"></div>
+                </div>
+            </div>
+            
+            <div id="puzzle-error">Não é possível</div>
+            
+            <div id="puzzle-feedback" class="success">Parabéns. Este é o menor caminho para apagar o fogo da usina!</div>
+            <div id="puzzle-feedback" class="failure">Caminho errado. Tente novamente.</div>
+            
+            <button id="close-puzzle-button">X</button>
+        </div>
+
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

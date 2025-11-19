@@ -1,0 +1,463 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #000;
+    overflow: hidden; /* Garante que nada saia da tela */
+}
+
+/* --- NOVO: Estilos da Tela de Início --- */
+#start-screen {
+    position: absolute; /* Para cobrir toda a tela */
+    top: 0;
+    left: 0;
+    width: 100vw; /* 100% da largura da viewport */
+    height: 100vh; /* 100% da altura da viewport */
+    background-image: url('telainicio.png'); /* Sua imagem de fundo */
+    background-size: auto; /* Remove o 'cover' para usar o tamanho original */
+    background-repeat: no-repeat; /* Impede que a imagem se repita */
+    background-position: center; /* Centraliza a imagem na tela */
+    display: flex; 
+    flex-direction: column; 
+    justify-content: flex-end; 
+    align-items: center; 
+    z-index: 100;
+}
+
+#startButton {
+    width: 200px; /* Tamanho reduzido do botão */
+    height: auto; /* Mantém a proporção */
+    margin-bottom: 10vh; /* Ajusta a posição do meio para baixo */
+    cursor: pointer;
+    
+    /* --- ANIMAÇÃO DE AUMENTAR/DIMINUIR --- */
+    animation: pulse 1.5s infinite alternate; /* Nome, duração, repetição, direção */
+}
+
+/* --- Definição da Animação 'pulse' --- */
+@keyframes pulse {
+    from {
+        transform: scale(0.95); /* Começa um pouco menor */
+    }
+    to {
+        transform: scale(1.05); /* Vai um pouco maior */
+    }
+}
+
+/* --- NOVO: Estilos da Tela do Jogo --- */
+#game-screen {
+    /* Inicialmente escondida */
+    display: none; 
+    width: 100vw;
+    height: 100vh;
+    display: flex; /* Para centralizar o game-container */
+    justify-content: center;
+    align-items: center;
+}
+
+/* O restante do seu CSS para o #game-container, #game-map e #player */
+/* Permanece o mesmo de antes */
+
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background-color: #000; /* Para evitar que veja o fundo preto do body */
+}
+
+#game-map {
+    position: relative;
+    background-image: url('mapaoficial.png');
+    background-repeat: no-repeat;
+    width: 4096px; 
+    height: 4096px;
+}
+/* --- NOVO: Efeito Vignette (Among Us) --- */
+#game-map::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Esta é a escuridão translúcida que você pediu */
+    background-color: rgba(0, 0, 0, 0.85);
+
+    /* O círculo de luz transparente */
+    background-image: radial-gradient(
+        circle 400px at center, /* Raio do círculo de luz */
+        transparent 150px, /* Luz total */
+        rgba(0, 0, 0, 0.85) 350px /* Escuridão */
+    );
+    
+    background-repeat: no-repeat;
+    background-size: 1000px 1000px; /* 2x o raio */
+    
+    /* Pega a posição do jogador do JavaScript */
+    background-position: var(--vignette-x) var(--vignette-y);
+
+    z-index: 1; /* Fica em cima do mapa */
+    pointer-events: none; /* Deixa o mouse "atravessar" */
+    
+    /* Começa escondido */
+    display: none; 
+}
+#game-map.phase-2-active::before {
+    display: block;
+}
+#player {
+    position: absolute;
+    left: 1500px; 
+    top: 1250px;
+    width: 200px;
+    height: auto; 
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0px 5px 3px rgba(0, 0, 0, 0.5));
+    z-index: 2;
+}
+
+/* --- NOVO: Estilos do Minimapa --- */
+
+/* O ícone no canto superior direito */
+#minimap-icon-container {
+    position: absolute; 
+    top: 20px;
+    right: 20px;
+    
+    /* --- MUDANÇA AQUI --- */
+    /* Z-index (210) é maior que o do overlay (200),
+       para o botão ficar na FRENTE do fundo borrado. */
+    z-index: 210; 
+}
+
+#minimap-toggle-button {
+    width: 64px; 
+    height: 64px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: transform 0.2s;
+    /* --- Borda removida daqui --- */
+}
+
+#minimap-toggle-button:hover {
+    transform: scale(1.1);
+}
+
+/* O fundo borrado de tela cheia */
+#minimap-overlay {
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.3); 
+    z-index: 200; /* Fica por cima do JOGO */
+    display: none; 
+    justify-content: center;
+    align-items: center;
+}
+
+/* O container do mapa grande (para centralizar) */
+#minimap-large-container {
+    position: relative; 
+    display: none; 
+    z-index: 201; /* Fica por cima do overlay */
+}
+
+#minimap-large-image {
+    height: 80vh; 
+    width: auto;
+    border-radius: 5px;
+    /* --- Borda removida daqui --- */
+}
+
+/* O ponto vermelho do jogador */
+#minimap-player-dot {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background-color: red;
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 8px red;
+}
+/* ... (Todo o seu CSS anterior) ... */
+
+/* --- NOVO: Estilos da Luz de Alerta --- */
+#alert-light {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw; /* Cobre o canto superior esquerdo */
+    height: 100vw; /* Cobre o canto superior esquerdo */
+    background: radial-gradient(circle at top left, rgba(255, 0, 0, 0.4) 0%, transparent 100%);
+    pointer-events: none; /* Permite clicar através dele */
+    z-index: 15; /* Fica acima do mapa, mas abaixo do mini-mapa */
+    opacity: 0;
+    animation: alert-pulse 4s infinite; /* Animação intermitente */
+}
+
+@keyframes alert-pulse {
+    0%, 75% { /* Desligado por 3 segundos (0% a 75% de 4s) */
+        opacity: 0;
+    }
+    76%, 100% { /* Ligado por 1 segundo (76% a 100% de 4s) */
+        opacity: 0.4;
+    }
+}
+
+/* --- NOVO: Animação SÓ PARA A SETA --- */
+@keyframes arrow-pulse {
+    0%, 75% { /* Desligado por 3 segundos */
+        opacity: 0;
+    }
+    76%, 100% { /* Ligado por 1 segundo */
+        opacity: 1; /* Totalmente visível */
+    }
+}
+
+/* --- NOVO: Estilos do Ponto de Interação (círculo preto) --- */
+#mission-hotspot {
+    position: absolute;
+    width: 150px;  /* Ajuste o tamanho da animação */
+    height: 193px; /* Ajuste a altura */
+    cursor: pointer;
+    z-index: 5; /* Fica acima do mapa */
+    
+    /* Posição (mantenha a sua) */
+    left: 1750px; 
+    top: 900px;
+    z-index: 2;
+}
+
+/* --- NOVO: Mensagem de Interação --- */
+#interaction-message {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    white-space: nowrap;
+    display: none; /* Escondido por padrão */
+    z-index: 6; /* Acima do hotspot */
+    /* Posicione-o um pouco acima do hotspot */
+    left: 1730px; /* Exemplo: Ajuste X */
+    top: 860px; /* Exemplo: Ajuste Y */
+}
+
+
+/* --- NOVO: Tela do Jogo de Puzzle --- */
+#puzzle-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8); /* Fundo escuro */
+    display: none; /* Escondido por padrão */
+    justify-content: center;
+    align-items: center;
+    z-index: 300; /* Acima de tudo */
+}
+
+/* --- ESTILO DO QUEBRA-CABEÇA (GRAFO) --- */
+
+/* NOVO: O wrapper que centraliza no flexbox */
+#puzzle-wrapper {
+    position: relative; /* Permite o empilhamento */
+}
+
+/* MODIFICADO: A imagem agora é a base */
+#puzzle-image {
+    max-width: 80%; 
+    max-height: 80%;
+    border: 5px solid #ffcc00; 
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.7);
+    /* Importante: Garante que o wrapper tenha o tamanho da imagem */
+    display: block; 
+}
+
+/* NOVO: A camada interativa que fica sobre a imagem */
+#graph-interactive-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    /* Ajusta ao tamanho da imagem (contando a borda) */
+    width: calc(100% - 10px); /* 100% menos 5px da borda esquerda + 5px da direita */
+    height: calc(100% - 10px);/* 100% menos 5px da borda topo + 5px da base */
+    margin: 5px; /* Compensa as bordas */
+}
+
+/* Estilo para todos os nós */
+.node {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    /* Estilo do "X" */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    font-weight: bold;
+    color: white;
+    font-family: sans-serif;
+    text-shadow: 0 0 5px black;
+}
+
+/* Posições exatas dos nós sobre a imagem de fundo */
+/* (Estes valores são % da camada, podem precisar de ajuste fino) */
+#n1 { left: 18.0%; top: 51.4%; } /* Nó Vermelho */
+#n2 { left: 30.4%; top: 27.1%; }
+#n3 { left: 49.6%; top: 26.9%; }
+#n4 { left: 49.5%; top: 75.5%; }
+#n5 { left: 30.4%; top: 75.5%; }
+#n6 { left: 62.1%; top: 51.6%; } /* Nó Azul */
+
+/* Estilo para os pesos (números) */
+.edge-weight {
+    position: absolute;
+    color: white;
+    font-size: 0.9em;
+    font-weight: bold;
+    z-index: 5;
+    text-shadow: 0 0 3px black;
+    pointer-events: none; 
+    transform: translate(-50%, -50%); /* Centraliza o texto na posição */
+}
+
+/* Onde as linhas neon são desenhadas */
+#neon-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 8;
+    pointer-events: none;
+}
+
+/* Estilo da linha neon */
+.neon-line {
+    stroke: #FFFF00; /* Amarelo Neon */
+    stroke-width: 4;
+    stroke-linecap: round;
+    /* Efeito de Brilho */
+    filter: drop-shadow(0 0 3px #FFFF00) drop-shadow(0 0 5px #FFFF00);
+}
+
+/* Mensagem de Erro */
+#puzzle-error {
+    position: absolute;
+    bottom: 20vh; /* Posição na tela */
+    padding: 10px 20px;
+    background-color: #D32F2F; /* Vermelho */
+    color: white;
+    border-radius: 5px;
+    font-family: sans-serif;
+    font-weight: bold;
+    z-index: 400; /* Acima de tudo */
+    display: none; /* Começa escondido */
+}
+
+#close-puzzle-button {
+    position: absolute;
+    top: 10vh; /* Ajuste para ficar em cima da imagem */
+    right: 10vw; /* Ajuste para ficar em cima da imagem */
+    background-color: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5em;
+    cursor: pointer;
+    display: none; /* Escondido por padrão, aparece com a tela do puzzle */
+    z-index: 301;
+}
+/* --- NOVO: Estilo da Seta Guia --- */
+/* --- MUDANÇA: Estilo da Seta Guia (Amarela e Alongada) --- */
+#mission-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    
+    /* --- MUDANÇA AQUI: Valores Maiores --- */
+    border-top: 22px solid transparent; /* Antes era 15px */
+    border-bottom: 22px solid transparent; /* Antes era 15px */
+    border-left: 52px solid #FFD700; /* Antes era 35px */
+    
+    z-index: 16; 
+    pointer-events: none;
+    opacity: 0;
+    animation: arrow-pulse 4s infinite;
+    top: 50vh;
+    left: 50vw;
+    filter: drop-shadow(0px 0px 5px rgba(0, 0, 0, 0.8));
+}
+
+/* --- NOVO: Estilos de Feedback do Puzzle --- */
+#puzzle-feedback {
+    position: absolute;
+    bottom: 20vh;
+    padding: 10px 20px;
+    color: white;
+    border-radius: 5px;
+    font-family: sans-serif;
+    font-weight: bold;
+    z-index: 400;
+    display: none;
+    text-align: center;
+    max-width: 300px;
+}
+
+#puzzle-feedback.success {
+    background-color: #4CAF50; /* Verde */
+}
+
+#puzzle-feedback.failure {
+    background-color: #D32F2F; /* Vermelho */
+}
+/* --- NOVO: Estilos da Missão Elétrica --- */
+#elétrica-hotspot {
+    position: absolute;
+    width: 50px;  /* Tamanho da área clicável */
+    height: 50px;
+    /* background-color: rgba(0, 255, 0, 0.5); */ /* (Descomente para ver) */
+    cursor: pointer;
+    z-index: 2; /* Acima da sombra */
+    
+    /* !!! VOCÊ PRECISA POSICIONAR ISSO !!! */
+    /* Use as coordenadas da sala Elétrica */
+    left: 1200px; 
+    top: 500px;
+}
+
+#elétrica-interaction-message {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-family: sans-serif;
+    font-size: 0.9em;
+    white-space: nowrap;
+    display: none; /* Escondido por padrão */
+    z-index: 6; 
+    
+    /* !!! VOCÊ PRECISA POSICIONAR ISSO !!! */
+    /* Perto do hotspot da Elétrica */
+    left: 1180px; 
+    top: 460px; 
+}
