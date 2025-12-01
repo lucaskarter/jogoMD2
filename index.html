@@ -7,13 +7,38 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+    <audio id="bg-music" src="musicafundo.mp3" preload="auto" loop></audio>
+    <audio id="dialogue-audio" src="fala1.mp3" preload="auto" loop></audio>
+    <audio id="audio-fase1" src="fase1.mp3" preload="auto" loop></audio>
+    <audio id="audio-fase2" src="fase2.mp3" preload="auto" loop></audio>
+    <audio id="audio-brecha" src="brecha.mp3" preload="auto" loop></audio>
+    <audio id="audio-motor" src="motor_travado.mp3" preload="auto" loop></audio> 
+    <audio id="audio-final1" src="final11.mp3" preload="auto" loop></audio>
+    <audio id="audio-final2" src="final12.mp3" preload="auto" loop></audio>
     <div id="start-screen">
         <img src="start.png" id="startButton" alt="Botão Start">
     </div>
+    <div id="cutscene-overlay" style="display: none;">
+        <video id="cutscene-video" src="intro.mp4" playsinline></video>
+        <div id="skip-hint">Pressione ESPAÇO para pular</div>
+    </div>
 
     <div id="game-screen">
-        
+        <div id="dialogue-overlay" style="display: none;">
+            <div id="dialogue-box">
+                
+                <div id="gyro-container">
+                    <img src="robo.png" id="gyro-img" alt="Gyro">
+                    <div id="gyro-name">GYRO</div>
+                </div>
+
+                <div id="dialogue-content">
+                    <p id="typewriter-text"></p>
+                    <span id="blink-cursor">|</span> </div>
+                
+                <div id="skip-dialogue">ESPAÇO para Pular</div>
+            </div>
+        </div>
         <div id="alert-light"></div>
 
         <div id="mission-arrow"></div>
@@ -21,12 +46,17 @@
         <div id="game-container">
             <div id="game-map">
                 <img src="personagemparado.png" id="player">
-                
                 <img src="fogo.gif" id="mission-hotspot" alt="Animação da Missão">
                 <div id="interaction-message">Pressione E para Interagir</div>
-            
+                <img src="eletricahots.png" id="elétrica-visual" alt="Contorno Elétrica">
                 <div id="elétrica-hotspot"></div>
                 <div id="elétrica-interaction-message">Pressione E para Interagir</div>
+                <div id="cafeteria-hotspot"></div> 
+                <div id="cafeteria-interaction-message">Pressione E para Reparar</div>
+                <div id="engine-hotspot"></div>
+                <div id="engine-message">Pressione E para Diagnosticar</div>
+                <div id="teleport-overlay" style="display: none;">
+                <div id="teleport-message">Pressione E para Entrar</div>   
             </div>
         </div>
 
@@ -77,7 +107,90 @@
         </div>
 
     </div>
+    <div id="electric-puzzle-screen">
+        <div id="electric-wrapper">
+            <img src="eletricamap.png" id="electric-bg-image" alt="Painel Elétrico">
+            
+            <div id="electric-interactive-layer">
+                <svg id="electric-neon-lines"></svg>
+                
+                <div class="elec-node" id="e1" data-id="e1"></div>
+                <div class="elec-node" id="e2" data-id="e2"></div>
+                <div class="elec-node" id="e3" data-id="e3"></div>
+                <div class="elec-node" id="e4" data-id="e4"></div>
+                <div class="elec-node" id="e5" data-id="e5"></div>
+                <div class="elec-node" id="e6" data-id="e6"></div>
+                <div class="elec-node" id="e7" data-id="e7"></div>
+                <div class="elec-node" id="e8" data-id="e8"></div>
+                <div class="elec-node" id="e9" data-id="e9"></div>
+                <div class="elec-node" id="e10" data-id="e10"></div>
+                <div class="elec-node" id="e11" data-id="e11"></div>
+                <div class="elec-node" id="e12" data-id="e12"></div>
+                <div class="elec-node" id="e13" data-id="e13"></div>
+                <div class="elec-node" id="e14" data-id="e14"></div>
+                <div class="elec-node" id="e15" data-id="e15"></div>
+                <div class="elec-node" id="e16" data-id="e16"></div>
+                <div class="elec-node" id="e17" data-id="e17"></div>
+                <div class="elec-node" id="e18" data-id="e18"></div>
+                <div class="elec-node" id="e19" data-id="e19"></div>
+                <div class="elec-node" id="e20" data-id="e20"></div>
+                </div>
+        </div>
+        <div id="electric-feedback">Complete o circuito passando por todos os pontos!</div>
+        <button id="close-electric-button">X</button>
+    </div>
 
+    <div id="hull-repair-screen">
+        <div id="hull-wrapper">
+            <img src="fase3.png" id="hull-bg-image" alt="Reparo do Casco">
+            
+            <div id="hull-slots-layer">
+                <div class="hull-slot" id="slot-0" data-id="0"></div>
+                <div class="hull-slot" id="slot-1" data-id="1"></div>
+                <div class="hull-slot" id="slot-2" data-id="2"></div>
+                <div class="hull-slot" id="slot-3" data-id="3"></div>
+                <div class="hull-slot" id="slot-4" data-id="4"></div>
+                <div class="hull-slot" id="slot-5" data-id="5"></div>
+                <div class="hull-slot" id="slot-6" data-id="6"></div>
+                <div class="hull-slot" id="slot-7" data-id="7"></div>
+                <div class="hull-slot" id="slot-8" data-id="8"></div>
+                <div class="hull-slot" id="slot-9" data-id="9"></div>
+                <div class="hull-slot" id="slot-10" data-id="10"></div>
+            </div>
+
+            <div id="hull-sidebar">
+                <div id="hull-options-container">
+                    </div>
+            </div>
+        </div>
+        
+        <div id="hull-feedback">Selecione uma peça e encaixe na fenda!</div>
+        
+        <div id="dragged-piece" style="display: none;"></div>
+    </div>
+    <div id="engine-hud">
+        <div class="hud-title">PEÇAS DO MOTOR</div>
+        <div id="hud-slots">
+            <div class="hud-slot" id="slot-alavanca">
+                <img src="alavanca.png" alt="Alavanca">
+            </div>
+            <div class="hud-slot" id="slot-capacitor">
+                <img src="capacitor.png" alt="Capacitor">
+            </div>
+            <div class="hud-slot" id="slot-rolamento">
+                <img src="rolamento.png" alt="Rolamento">
+            </div>
+        </div>
+        <div id="hud-status">Procure: ALAVANCA</div>
+    </div>
+    <div id="game-alert-overlay">
+        <div id="game-alert-box">
+            <span id="game-alert-text">Mensagem do Sistema</span>
+        </div>
+    </div>
+
+
+    <div id="items-container"></div>
     <script src="game.js"></script>
 </body>
 </html>
