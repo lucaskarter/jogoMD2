@@ -2440,13 +2440,39 @@ function finishCutscene() {
     const overlay = document.getElementById('cutscene-overlay');
     const video = document.getElementById('cutscene-video');
     
-    // Pausa o vídeo (caso tenha sido pulado)
-    if(video) video.pause();
+    // 1. Para o áudio do vídeo imediatamente
+    if(video) {
+        video.pause();
+        video.currentTime = 0; // Reseta
+    }
     
-    // Esconde a tela do vídeo
+    // 2. Some com a tela do vídeo
     overlay.style.display = 'none';
-    overlay.classList.remove('fade-out'); // Reseta para a próxima vez
+    overlay.classList.remove('fade-out'); 
 
-    // INICIA O JOGO REAL
+    // 3. AGORA SIM inicia o jogo e os áudios do jogo
     startGameSequence();
+}
+function startGameSequence() {
+    const gameScreen = document.getElementById('game-screen');
+    gameScreen.style.display = 'flex'; 
+    
+    console.log('Cutscene finalizada. Iniciando jogo...');
+
+    // 1. Inicia Música de Fundo (Loop)
+    const bgMusic = document.getElementById('bg-music');
+    if (bgMusic) {
+        bgMusic.volume = 0.2; // Volume baixo para não brigar com a fala
+        bgMusic.currentTime = 0;
+        bgMusic.play().catch(e => console.log("Erro música:", e));
+    }
+    
+    // 2. Carrega Colisão e Inicia o Jogo + Diálogo
+    setupCollisionCanvas(() => {
+        startGame(); // Inicia o loop visual e mecânicas
+        
+        // 3. INICIA O DIÁLOGO (Com o áudio do robô)
+        // Isso garante que o áudio 'dialogo.mp3' comece APÓS o vídeo
+        startDialogueSequence(introDialogues, 'dialogue-audio', null);
+    }); 
 }
