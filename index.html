@@ -16,6 +16,9 @@
     <audio id="audio-final1" src="final11.mp3" preload="auto" loop></audio>
     <audio id="audio-final2" src="final12.mp3" preload="auto" loop></audio>
     <div id="start-screen">
+        <input type="text" id="player-name-input" placeholder="DIGITE SEU NOME" maxlength="10">
+        <div id="name-error-msg"></div>
+        
         <img src="start.png" id="startButton" alt="Botão Start">
     </div>
     <div id="cutscene-overlay" style="display: none;">
@@ -39,6 +42,7 @@
                 <div id="skip-dialogue">ESPAÇO para Pular</div>
             </div>
         </div>
+        <div id="game-timer-display">00:00</div>
         <div id="alert-light"></div>
 
         <div id="mission-arrow"></div>
@@ -191,6 +195,27 @@
 
 
     <div id="items-container"></div>
+    <div id="victory-screen" style="display: none;">
+        <div id="victory-content">
+            <h1 class="neon-title">MISSÃO CUMPRIDA</h1>
+            <div class="stat-box">
+                <span class="stat-label">SEU TEMPO</span>
+                <span id="final-time-text">00:00</span>
+            </div>
+
+            <div id="ranking-container">
+                <h3>TOP 10 COMANDANTES</h3>
+                <ul id="leaderboard-list">
+                    <li>Carregando...</li>
+                </ul>
+            </div>
+
+            <button id="restart-game-btn">INICIAR NOVA JORNADA</button>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
     <script src="game.js"></script>
 </body>
 </html>

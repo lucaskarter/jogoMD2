@@ -1,5 +1,74 @@
 
 // --- Referências aos elementos da tela de início ---
+// ======================================================
+// === CONFIGURAÇÃO DO FIREBASE (RANKING) ===
+// ======================================================
+
+// COLOQUE AQUI O CÓDIGO QUE VOCÊ COPIOU DO FIREBASE
+// Import the functions you need from the SDKs you need
+//import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD7B6-pijVOFvoNULP1WY6kjaILJbnPjE4",
+  authDomain: "spaceshiprunner-5e1bc.firebaseapp.com",
+  databaseURL: "https://spaceshiprunner-5e1bc-default-rtdb.firebaseio.com",
+  projectId: "spaceshiprunner-5e1bc",
+  storageBucket: "spaceshiprunner-5e1bc.firebasestorage.app",
+  messagingSenderId: "85423952964",
+  appId: "1:85423952964:web:9813f503ba8c9fd7bbd811"
+};
+
+// Initialize Firebase
+//const app = initializeApp(firebaseConfig);
+
+// Inicializa Firebase
+//firebase.initializeApp(firebaseConfig);
+//const database = firebase.database();
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+
+// Pega a referência do banco
+const database = firebase.database();
+
+let currentPlayerName = "";
+
+// Função para validar nome e iniciar
+async function tryStartGame() {
+    const input = document.getElementById('player-name-input');
+    const errorMsg = document.getElementById('name-error-msg');
+    const name = input.value.trim().toUpperCase(); // Salva em maiúsculo
+
+    if (name.length < 3) {
+        errorMsg.innerText = "Mínimo 3 letras!";
+        return;
+    }
+
+    // Verifica se o nome já existe no Banco de Dados
+    errorMsg.innerText = "Verificando disponibilidade...";
+    
+    // Lê o banco de dados uma vez
+    const snapshot = await database.ref('ranking/' + name).once('value');
+    
+    if (snapshot.exists()) {
+        errorMsg.innerText = "Este nome já foi usado. Escolha outro.";
+    } else {
+        // Nome livre! Pode começar.
+        currentPlayerName = name;
+        errorMsg.innerText = "";
+        
+        // Esconde a tela de início
+        startScreen.style.display = 'none';
+        
+        // --- MUDANÇA AQUI: ---
+        // Antes: Iniciava o jogo direto.
+        // Agora: Chama a Cutscene. O jogo só começa quando o vídeo acabar.
+        playCutscene(); 
+    }
+}
 const startScreen = document.getElementById('start-screen');
 const startButton = document.getElementById('startButton');
 const gameScreen = document.getElementById('game-screen');
@@ -44,6 +113,10 @@ const graph = {
     'n6': { adj: ['n3', 'n4'], coords: { x: 62.1, y: 51.6 } }  // Nó Azul
 };
 
+let playerPosition = {
+        x: 1950, 
+        y: 1850
+    };
 let currentNodeId = 'n1'; // Onde o jogador está
 let errorTimeout; // Para controlar a mensagem de erro
 // --- NOVO: Estado do Jogo ---
@@ -87,7 +160,7 @@ function setupCollisionCanvas(callback) {
     const r = pixelData[0];
     return r > 200; 
 }*/
-function isWalkable(x, y) {
+/*function isWalkable(x, y) {
     // Se a máscara ainda não carregou, retorna true para não travar o jogo
     if (!collisionContext) return true;
 
@@ -108,6 +181,41 @@ function isWalkable(x, y) {
     // Se for menor (preto), é PAREDE.
     // IMPORTANTE: Se sua máscara for invertida (Chão Preto), mude para '< 100'.
     return pixelData[0] > 100; 
+}*/
+// Função ROBUSTA para verificar colisão
+function isWalkable(x, y) {
+    // 1. Se a máscara não carregou, deixa andar para não travar
+    if (!collisionContext) return true;
+
+    // 2. PROTEÇÃO CONTRA ERRO 'LONG': Verifica se são números válidos
+    // Se x ou y forem NaN, undefined ou Infinito, retorna false (parede)
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        // Opcional: console.warn("Coordenada inválida detectada:", x, y);
+        return false; 
+    }
+
+    // 3. ARREDONDAMENTO OBRIGATÓRIO
+    // O 'getImageData' exige inteiros (long). O Math.floor remove as vírgulas.
+    const pixelX = Math.floor(x);
+    const pixelY = Math.floor(y);
+
+    // 4. PROTEÇÃO DE LIMITES (Não ler fora do mapa)
+    const mapWidth = collisionContext.canvas.width;
+    const mapHeight = collisionContext.canvas.height;
+
+    if (pixelX < 0 || pixelX >= mapWidth || pixelY < 0 || pixelY >= mapHeight) {
+        return false; // Fora do mapa é parede
+    }
+
+    // 5. EXECUÇÃO SEGURA
+    try {
+        const pixelData = collisionContext.getImageData(pixelX, pixelY, 1, 1).data;
+        // Se o pixel for Claro (R > 100), é chão. Se for Escuro, é parede.
+        return pixelData[0] > 100;
+    } catch (e) {
+        console.error("Erro ao ler pixel:", e);
+        return false; // Na dúvida, é parede
+    }
 }
 
 function updatePlayerOnMinimap(playerPosition) {
@@ -211,10 +319,6 @@ function startGame() {
     const gameMap = document.getElementById('game-map');
     const gameContainer = document.getElementById('game-container');
 
-    let playerPosition = {
-        x: 1950, 
-        y: 1850
-    };
     
     let hotspotIsOnScreen = false;
     let isNearHotspot = false;
@@ -254,6 +358,10 @@ function startGame() {
     elétricaHotspotHeight = elétricaHotspot.clientHeight;
     elétricaInteractionMessage.style.display = 'none'; // Garante que começa escondido
 
+    // Listener para o botão de reiniciar na tela de vitória
+    document.getElementById('restart-game-btn').addEventListener('click', () => {
+        location.reload(); // Recarrega a página
+    });
     document.addEventListener('keydown', (event) => {
         keysPressed[event.key] = true;
 
@@ -290,6 +398,21 @@ function startGame() {
                     if (isPlayerNearHotspot(playerPosition, spot.entry.x - 50, spot.entry.y - 50, 100, 100)) {
                         triggerTeleport(spot, playerPosition);
                     }
+                });
+            }
+            if (!isGamePaused && !isTeleporting) {
+                teleportSpots.forEach(spot => {
+                    
+                    // 1. Verifica se está na ENTRADA -> Vai para SAÍDA
+                    if (isPlayerNearHotspot(playerPosition, spot.entry.x - 50, spot.entry.y - 50, 100, 100)) {
+                        triggerTeleport(spot.exit, playerPosition); 
+                    }
+                    
+                    // 2. Verifica se está na SAÍDA -> Volta para ENTRADA
+                    else if (isPlayerNearHotspot(playerPosition, spot.exit.x - 50, spot.exit.y - 50, 100, 100)) {
+                        triggerTeleport(spot.entry, playerPosition); 
+                    }
+                    
                 });
             }
         }    
@@ -461,27 +584,31 @@ function startGame() {
 
         // --- LÓGICA DA MENSAGEM DE TELEPORTE ---
         // Verifica se está perto de QUALQUER ponto de entrada configurado
-        let nearTeleport = null;
+        // --- LÓGICA DA MENSAGEM DE TELEPORTE (IDA E VOLTA) ---
+        let teleportMessagePos = null; // Onde a mensagem vai aparecer
 
-        // Procura na lista de teleportes
         for (let i = 0; i < teleportSpots.length; i++) {
             const spot = teleportSpots[i];
+            
+            // Checa Entrada
             if (isPlayerNearHotspot(playerPosition, spot.entry.x - 50, spot.entry.y - 50, 100, 100)) {
-                nearTeleport = spot;
-                break; // Achou um, não precisa procurar mais
+                teleportMessagePos = spot.entry;
+                break;
+            }
+            // Checa Saída (Agora também mostra mensagem aqui!)
+            if (isPlayerNearHotspot(playerPosition, spot.exit.x - 50, spot.exit.y - 50, 100, 100)) {
+                teleportMessagePos = spot.exit;
+                break;
             }
         }
 
-        // Mostra ou esconde a mensagem
         const tpMsg = document.getElementById('teleport-message');
         if (tpMsg) {
-            if (nearTeleport && !isTeleporting && !isGamePaused) {
+            if (teleportMessagePos && !isTeleporting && !isGamePaused) {
                 tpMsg.style.display = 'block';
-                
-                // Posiciona a mensagem em cima da entrada
-                // (-40 e -60 são ajustes para centralizar o texto acima do ponto)
-                tpMsg.style.left = (nearTeleport.entry.x - 40) + 'px';
-                tpMsg.style.top = (nearTeleport.entry.y - 80) + 'px';
+                // Posiciona em cima do ponto detectado
+                tpMsg.style.left = (teleportMessagePos.x - 40) + 'px';
+                tpMsg.style.top = (teleportMessagePos.y - 80) + 'px';
             } else {
                 tpMsg.style.display = 'none';
             }
@@ -729,25 +856,10 @@ window.addEventListener('load', () => {
     startScreen.style.display = 'flex'; 
 
     // 2. Adiciona o evento de clique ao botão Start
+    // No window.load...
     startButton.addEventListener('click', () => {
-        startScreen.style.display = 'none';
-        gameScreen.style.display = 'flex'; 
-        // 1. Esconde a tela de início
-        // 2. Inicia a Cutscene
-        playCutscene();
-        console.log('Carregando máscara de colisão para iniciar o jogo...');
-        const bgMusic = document.getElementById('bg-music');
-        if (bgMusic) {
-            bgMusic.volume = 0.8; // Volume baixo (30%) para não atrapalhar os efeitos
-            bgMusic.play().catch(error => {
-                console.log("O navegador bloqueou o autoplay da música:", error);
-            });
-        }
-        setupCollisionCanvas(()=>{
-            startGame();          // Inicia o loop do jogo
-            startDialogueSequence(introDialogues, 'dialogue-audio', null);
-        });
-        
+        // Chama a função que verifica o nome antes de começar
+        tryStartGame();
     });
 
     // --- Adiciona o evento de clique ao ÍCONE do mapa ---
@@ -1825,10 +1937,14 @@ function clearActiveItems() {
     updateMinimapDots();
 }
 
-function finishGamePhase4() {
+/*function finishGamePhase4() {
+    pauseTimer(); 
+    gameFinished = true;
+    const finalTime = getFormattedTime();
     clearActiveItems();
     engineHud.style.display = 'none';
     const engMsg = document.getElementById('engine-message');
+
     if (engMsg) engMsg.style.display = 'none';
     // SEQUÊNCIA FINAL:
     // 1. Toca o primeiro diálogo com áudio 1
@@ -1839,8 +1955,75 @@ function finishGamePhase4() {
             startDialogueSequence(finalDialogues2, 'audio-final2', () => {
                 
                 // 3. Fim real (Créditos ou Reload)
-                alert("FIM DE JOGO! OBRIGADO POR JOGAR.");
+                alert("`PARABÉNS CAPITÃO!\nTEMPO TOTAL: ${finalTime}\nObrigado por jogar.`");
                 location.reload();
+            });
+        }, 1000);
+    });
+}*/
+function finishGamePhase4() {
+    // 1. Para o timer e pega o valor final
+    pauseTimer(); 
+    gameFinished = true;
+    const finalTime = getFormattedTime();
+
+    // 2. Limpa o mapa
+    clearActiveItems();
+    engineHud.style.display = 'none';
+    const engMsg = document.getElementById('engine-message');
+    if (engMsg) engMsg.style.display = 'none';
+
+    // 3. Sequência de Diálogos Finais
+    startDialogueSequence(finalDialogues1, 'audio-final1', () => {
+        setTimeout(() => {
+            startDialogueSequence(finalDialogues2, 'audio-final2', () => {
+                
+                // --- DENTRO DA FUNÇÃO finishGamePhase4 ---
+                
+                // 1. Preenche o tempo visual
+                const timeText = document.getElementById('final-time-text');
+                timeText.innerText = finalTime;
+                
+                // 2. SALVA NO FIREBASE
+                // Salvamos o tempo em milissegundos para facilitar a ordenação (menor é melhor)
+                // O caminho no banco será: ranking/NOME_DO_JOGADOR
+                database.ref('ranking/' + currentPlayerName).set({
+                    timeString: finalTime,
+                    timeMs: totalElapsedTime, // Variável global do cronômetro
+                    date: Date.now()
+                });
+
+                // 3. BUSCA O TOP 10
+                const leaderboardList = document.getElementById('leaderboard-list');
+                leaderboardList.innerHTML = '<li>Carregando dados...</li>';
+
+                // Pede ao Firebase ordenado por 'timeMs' e limita aos 10 primeiros
+                database.ref('ranking').orderByChild('timeMs').limitToFirst(10).once('value', (snapshot) => {
+                    leaderboardList.innerHTML = ''; // Limpa lista
+                    
+                    let position = 1;
+                    
+                    snapshot.forEach((childSnapshot) => {
+                        const data = childSnapshot.val();
+                        const name = childSnapshot.key; // O nome é a chave
+                        
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>#${position} ${name}</span> <span>${data.timeString}</span>`;
+                        
+                        // Destaca se for o jogador atual
+                        if (name === currentPlayerName) {
+                            li.classList.add('current-player-rank');
+                        }
+                        
+                        leaderboardList.appendChild(li);
+                        position++;
+                    });
+                });
+
+                // 4. Mostra a tela
+                const victoryScreen = document.getElementById('victory-screen');
+                victoryScreen.style.display = 'flex';
+
             });
         }, 1000);
     });
@@ -1933,14 +2116,6 @@ function showCustomAlert(message, type = 'info') {
     }, 3000);
 }
 
-// --- LISTA DE TELEPORTES (Entrada e Saída) ---
-const teleportSpots = [
-    {
-        entry: { x: 1400, y: 400 }, 
-        exit: { x: 400, y: 3000 }
-    },
-];
-
 let isTeleporting = false; // Trava o movimento
 /*function triggerTeleport(spot) {
     if (isTeleporting) return;
@@ -2007,126 +2182,76 @@ let isTeleporting = false; // Trava o movimento
     }, 1600); // 800ms entrada + 800ms saída = 1.6s total
 }*/
 // MUDANÇA 1: Adicione 'playerPos' dentro dos parênteses
-function triggerTeleport(spot, playerPos) {
+// Agora a função pede 'targetCoords' (Coordenadas do Alvo) em vez de 'spot'
+
+function triggerTeleport(targetCoords, playerPos) {
     if (isTeleporting) return;
+    
+    if (!targetCoords || typeof targetCoords.x === 'undefined') return;
+
     isTeleporting = true;
 
     const player = document.getElementById('player');
     const effectImg = document.getElementById('teleport-visual-effect');
     const gameContainer = document.getElementById('game-container');
+    const gameMap = document.getElementById('game-map');
 
-    // MUDANÇA 2: Use 'playerPos' em vez de 'playerPosition' aqui
-    const centerX = playerPos.x + 100; 
-    const centerY = playerPos.y + 114;
+    const startCenterX = playerPos.x + 100; 
+    const startCenterY = playerPos.y + 114;
 
-    effectImg.style.left = centerX + 'px';
-    effectImg.style.top = centerY + 'px';
-    effectImg.src = 'teleport_enter.gif?' + Date.now(); 
-    effectImg.style.display = 'block';
+    // 1. Toca o GIF de Entrada
+    if (effectImg) {
+        effectImg.style.left = startCenterX + 'px';
+        effectImg.style.top = startCenterY + 'px';
+        effectImg.src = 'teleport_enter.gif?' + Date.now(); 
+        effectImg.style.display = 'block';
+    }
 
+    // 2. FADE OUT DO PERSONAGEM (Agora é suave por causa do CSS)
+    // O boneco vai sumindo enquanto o GIF roda
     player.style.opacity = '0';
 
+    // Aguarda o tempo do GIF e do Fade Out
     setTimeout(() => {
-        gameContainer.classList.add('teleport-vulto');
+        if(gameContainer) gameContainer.classList.add('teleport-vulto');
 
-        // MUDANÇA 3: Atualiza a posição usando 'playerPos'
-        playerPos.x = spot.exit.x;
-        playerPos.y = spot.exit.y;
+        // Teleporte Lógico (Move enquanto está invisível)
+        playerPos.x = targetCoords.x;
+        playerPos.y = targetCoords.y;
 
-        const cameraWidth = document.getElementById('game-container').clientWidth;
-        const cameraHeight = document.getElementById('game-container').clientHeight;
-        
-        // MUDANÇA 4: Use 'playerPos' aqui também
+        // Atualiza posição visual (ainda invisível)
+        player.style.left = playerPos.x + 'px';
+        player.style.top = playerPos.y + 'px';
+
+        // Atualiza Câmera
+        const cameraWidth = document.documentElement.clientWidth;
+        const cameraHeight = document.documentElement.clientHeight;
         let mapTranslateX = -playerPos.x + (cameraWidth / 2) - (200 / 2);
         let mapTranslateY = -playerPos.y + (cameraHeight / 2) - (229 / 2);
-        
-        document.getElementById('game-map').style.transform = `translate(${mapTranslateX}px, ${mapTranslateY}px)`;
+        gameMap.style.transform = `translate(${mapTranslateX}px, ${mapTranslateY}px)`;
 
-        // MUDANÇA 5: E aqui
-        const newCenterX = playerPos.x + 100;
-        const newCenterY = playerPos.y + 114;
-        
-        effectImg.style.left = newCenterX + 'px';
-        effectImg.style.top = newCenterY + 'px';
-        effectImg.src = 'teleport_exit.gif?' + Date.now();
+        // Move o GIF para a saída
+        if (effectImg) {
+            const destCenterX = playerPos.x + 100;
+            const destCenterY = playerPos.y + 114;
+            effectImg.style.left = destCenterX + 'px';
+            effectImg.style.top = destCenterY + 'px';
+            effectImg.src = 'teleport_exit.gif?' + Date.now();
+        }
 
-    }, 800); 
+    }, 800); // Tempo para sumir
 
+    // Finalização
     setTimeout(() => {
-        player.style.opacity = '1';
-        effectImg.style.display = 'none';
-        gameContainer.classList.remove('teleport-vulto');
-        isTeleporting = false;
+        // 3. FADE IN DO PERSONAGEM (Reaparece suavemente)
+        player.style.opacity = '1'; 
+        
+        if (effectImg) effectImg.style.display = 'none';
+        if (gameContainer) gameContainer.classList.remove('teleport-vulto');
+        
+        isTeleporting = false; 
     }, 1600);
 }
-// ======================================================
-// === DEBUG: VISUALIZADOR DE ÁREAS DE TELEPORTE ===
-// ======================================================
-
-/*function showTeleportHitboxes() {
-    const map = document.getElementById('game-map');
-    
-    // O tamanho da área sensível (Baseado no seu código: 100x100)
-    const size = 100; 
-    const offset = size / 2; // 50px para centralizar
-
-    teleportSpots.forEach((spot, index) => {
-        
-        // --- 1. QUADRADO DE ENTRADA (VERDE) ---
-        const entryBox = document.createElement('div');
-        entryBox.style.position = 'absolute';
-        entryBox.style.left = (spot.entry.x - offset) + 'px';
-        entryBox.style.top = (spot.entry.y - offset) + 'px';
-        entryBox.style.width = size + 'px';
-        entryBox.style.height = size + 'px';
-        
-        // Estilo visual
-        entryBox.style.border = '3px solid #00FF00'; // Borda Verde Neon
-        entryBox.style.backgroundColor = 'rgba(0, 255, 0, 0.3)'; // Fundo semi-transparente
-        entryBox.style.zIndex = '1000'; // Acima de tudo
-        entryBox.style.pointerEvents = 'none'; // Não atrapalha o clique
-        
-        // Texto para identificar
-        entryBox.innerHTML = `<span style="color:white; font-weight:bold; text-shadow:1px 1px black;">ENTRADA ${index + 1}</span>`;
-        
-        map.appendChild(entryBox);
-
-        // --- 2. QUADRADO DE SAÍDA (VERMELHO) ---
-        const exitBox = document.createElement('div');
-        exitBox.style.position = 'absolute';
-        exitBox.style.left = (spot.exit.x - offset) + 'px';
-        exitBox.style.top = (spot.exit.y - offset) + 'px';
-        exitBox.style.width = size + 'px';
-        exitBox.style.height = size + 'px';
-        
-        // Estilo visual
-        exitBox.style.border = '3px solid #FF0000'; // Borda Vermelha
-        exitBox.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        exitBox.style.zIndex = '1000';
-        exitBox.style.pointerEvents = 'none';
-        
-        // Texto
-        exitBox.innerHTML = `<span style="color:white; font-weight:bold; text-shadow:1px 1px black;">SAÍDA ${index + 1}</span>`;
-        
-        map.appendChild(exitBox);
-        
-        // --- 3. LINHA CONECTANDO (OPCIONAL) ---
-        // Ajuda a saber qual entrada leva a qual saída
-        // (Isso é apenas visualização técnica, não precisa ser perfeito)
-    });
-    
-    console.log("Modo Debug Ativado: Mostrando áreas de teleporte.");
-}
-
-// Ativa automaticamente quando a página carrega (para você testar)
-// Remova ou comente esta linha quando for publicar o jogo!
-window.addEventListener('load', () => {
-    // Damos um pequeno atraso para garantir que o mapa carregou
-    setTimeout(showTeleportHitboxes, 1000);
-});*/
-// ======================================================
-// === SISTEMA DE DIÁLOGO (MÁQUINA DE ESCREVER) ===
-// ======================================================
 
 // Lista de Falas (Textos em vez de GIFs)
 const introDialogues = [
@@ -2207,6 +2332,7 @@ let isTyping = false;   // Para saber se ainda está escrevendo
  * @param {Function} callback - (Opcional) Função para rodar quando o diálogo acabar.
  */
 function startDialogueSequence(textArray, audioId, callback = null) {
+    pauseTimer();
     isGamePaused = true;
     currentDialogueIndex = 0;
     activeDialogues = textArray; // Define qual texto vamos usar
@@ -2280,6 +2406,9 @@ function finishDialogue() {
     }
 
     isGamePaused = false;
+    if (!gameFinished) {
+        startTimer();
+    }
 
     // Se houver uma função agendada para rodar depois (ex: abrir puzzle), roda agora!
     if (onDialogueFinish) {
@@ -2303,105 +2432,7 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
-/*function startIntroSequence() {
-    isGamePaused = true;
-    currentDialogueIndex = 0;
-    
-    const overlay = document.getElementById('dialogue-overlay');
-    overlay.style.display = 'flex';
-    
-    // --- NOVO: TOCA O SOM ---
-    const audio = document.getElementById('dialogue-audio');
-    if (audio) {
-        audio.volume = 0.5; // Ajuste o volume (0.0 a 1.0)
-        audio.currentTime = 0; // Garante que comece do início
-        audio.play().catch(e => console.log("O navegador bloqueou o áudio:", e));
-    }
-    // ------------------------
 
-    playNextDialogue();
-}
-
-function playNextDialogue() {
-    // Se acabaram as falas, encerra
-    if (currentDialogueIndex >= introDialogues.length) {
-        finishDialogue();
-        return;
-    }
-
-    const text = introDialogues[currentDialogueIndex];
-    const textElement = document.getElementById('typewriter-text');
-    
-    // Limpa o texto anterior
-    textElement.innerHTML = "";
-    isTyping = true;
-
-    let charIndex = 0;
-    
-    // VELOCIDADE DA DIGITAÇÃO (menor = mais rápido)
-    const typingSpeed = 40; 
-
-    // Limpa intervalo anterior se houver
-    clearInterval(typingInterval);
-
-    // Começa a digitar letra por letra
-    typingInterval = setInterval(() => {
-        textElement.innerHTML += text.charAt(charIndex);
-        charIndex++;
-
-        // Toca som de teclado aqui se quiser (opcional)
-
-        // Se acabou a frase
-        if (charIndex >= text.length) {
-            clearInterval(typingInterval);
-            isTyping = false;
-            
-            // Aguarda 2 segundos e vai para a próxima automaticamente
-            // (Ou espera o jogador apertar Espaço)
-            setTimeout(() => {
-                // Só avança se o jogador não tiver pulado manualmente
-                if (currentDialogueIndex < introDialogues.length && !isTyping) {
-                    currentDialogueIndex++;
-                    playNextDialogue();
-                }
-            }, 3000); // Tempo de leitura após terminar de escrever
-        }
-    }, typingSpeed);
-}
-
-function finishDialogue() {
-    clearInterval(typingInterval);
-    document.getElementById('dialogue-overlay').style.display = 'none';
-    
-    // --- NOVO: PARA O SOM ---
-    const audio = document.getElementById('dialogue-audio');
-    if (audio) {
-        audio.pause();
-        audio.currentTime = 0; // Reseta para a próxima vez
-    }
-    // ------------------------
-
-    isGamePaused = false;
-}
-
-// Controle de Pular com ESPAÇO
-document.addEventListener('keydown', (e) => {
-    const overlay = document.getElementById('dialogue-overlay');
-    
-    if (overlay.style.display === 'flex' && e.code === 'Space') {
-        if (isTyping) {
-            // SE ESTIVER DIGITANDO: Completa a frase instantaneamente
-            clearInterval(typingInterval);
-            const fullText = introDialogues[currentDialogueIndex];
-            document.getElementById('typewriter-text').innerHTML = fullText;
-            isTyping = false;
-        } else {
-            // SE JÁ TERMINOU DE DIGITAR: Vai para a próxima
-            currentDialogueIndex++;
-            playNextDialogue();
-        }
-    }
-});*/
 function playCutscene() {
     const overlay = document.getElementById('cutscene-overlay');
     const video = document.getElementById('cutscene-video');
@@ -2453,26 +2484,178 @@ function finishCutscene() {
     // 3. AGORA SIM inicia o jogo e os áudios do jogo
     startGameSequence();
 }
+// Função chamada quando a Cutscene acaba (finishCutscene)
 function startGameSequence() {
     const gameScreen = document.getElementById('game-screen');
     gameScreen.style.display = 'flex'; 
     
-    console.log('Cutscene finalizada. Iniciando jogo...');
+    console.log('Cutscene finalizada. Iniciando jogo e áudios...');
 
-    // 1. Inicia Música de Fundo (Loop)
+    // 1. Inicia Música de Fundo (Agora sim!)
     const bgMusic = document.getElementById('bg-music');
     if (bgMusic) {
-        bgMusic.volume = 0.2; // Volume baixo para não brigar com a fala
+        bgMusic.volume = 0.2; 
         bgMusic.currentTime = 0;
         bgMusic.play().catch(e => console.log("Erro música:", e));
     }
     
-    // 2. Carrega Colisão e Inicia o Jogo + Diálogo
+    // 2. Carrega Colisão -> Inicia Jogo -> Inicia Diálogo
     setupCollisionCanvas(() => {
-        startGame(); // Inicia o loop visual e mecânicas
+        // Inicia a lógica do jogo (movimento, fases)
+        startGame(); 
         
-        // 3. INICIA O DIÁLOGO (Com o áudio do robô)
-        // Isso garante que o áudio 'dialogo.mp3' comece APÓS o vídeo
+        // --- AQUI ESTÁ O SEGREDO ---
+        // Inicia o diálogo introdutório do Gyro
         startDialogueSequence(introDialogues, 'dialogue-audio', null);
     }); 
+}
+// ======================================================
+// === SISTEMA DE CRONÔMETRO ===
+// ======================================================
+
+let gameTimerInterval = null;
+let totalElapsedTime = 0; // Tempo acumulado em milissegundos
+let sessionStartTime = 0; // Quando o timer começou a rodar da última vez
+let isTimerRunning = false;
+let gameFinished = false; // Trava o timer no final
+
+function startTimer() {
+    if (isTimerRunning || gameFinished) return;
+    
+    isTimerRunning = true;
+    sessionStartTime = Date.now();
+    
+    // Atualiza a cada 100ms (não precisa ser 1ms para não pesar)
+    gameTimerInterval = setInterval(updateTimerDisplay, 100);
+}
+
+function pauseTimer() {
+    if (!isTimerRunning) return;
+    
+    isTimerRunning = false;
+    clearInterval(gameTimerInterval);
+    
+    // Salva o tempo que passou nesta sessão
+    totalElapsedTime += Date.now() - sessionStartTime;
+}
+
+function getFormattedTime() {
+    // Calcula o tempo total (Acumulado + Sessão atual se estiver rodando)
+    let timeNow = totalElapsedTime;
+    if (isTimerRunning) {
+        timeNow += Date.now() - sessionStartTime;
+    }
+
+    // Converte para Segundos e Minutos
+    const totalSeconds = Math.floor(timeNow / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    // Formata com zero à esquerda (ex: 05:09)
+    const strMin = minutes < 10 ? "0" + minutes : minutes;
+    const strSec = seconds < 10 ? "0" + seconds : seconds;
+
+    return `${strMin}:${strSec}`;
+}
+
+function updateTimerDisplay() {
+    const display = document.getElementById('game-timer-display');
+    if (display) {
+        display.innerText = getFormattedTime();
+    }
+}
+// ======================================================
+// === SISTEMA DE TELEPORTE COM DEBUG ===
+// ======================================================
+
+// 1. CONFIGURAÇÃO: Defina aqui seus pontos de entrada e saída
+// (Use a ferramenta de clique no console para pegar os números exatos)
+const teleportSpots = [
+    {
+        name: "Ida",
+        entry: { x: 1410, y: 440 }, 
+        exit:  { x: 250,  y: 2950 }
+    }
+    // Adicione quantas vírgulas e blocos {} quiser...
+];
+
+// 2. FUNÇÃO DE DEBUG (Desenha os blocos para você ver)
+// ======================================================
+// === DEBUG: VISUALIZADOR DE TELEPORTE (BOLINHAS) ===
+// ======================================================
+
+function showTeleportDebug() {
+    const map = document.getElementById('game-map');
+    
+    // Limpa debugs antigos para não duplicar
+    const oldDots = document.querySelectorAll('.teleport-debug-dot');
+    oldDots.forEach(d => d.remove());
+
+    teleportSpots.forEach((spot) => {
+        
+        // --- 1. BOLINHA DA ENTRADA ---
+        const entryDot = document.createElement('div');
+        entryDot.className = 'teleport-debug-dot';
+        // Como usamos 'translate(-50%, -50%)' no CSS, podemos usar a coordenada exata aqui
+        entryDot.style.left = spot.entry.x + 'px'; 
+        entryDot.style.top = spot.entry.y + 'px';
+        map.appendChild(entryDot);
+
+        // --- 2. BOLINHA DA SAÍDA ---
+        const exitDot = document.createElement('div');
+        exitDot.className = 'teleport-debug-dot';
+        exitDot.style.left = spot.exit.x + 'px';
+        exitDot.style.top = spot.exit.y + 'px';
+        map.appendChild(exitDot);
+    });
+    
+    console.log("Modo Debug: Bolinhas de teleporte ativadas.");
+}
+
+// Ativa automaticamente (remova quando publicar o jogo)
+window.addEventListener('load', () => setTimeout(showTeleportDebug, 1000));
+
+// Ativa o debug assim que carregar (comente essa linha quando for publicar o jogo)
+window.addEventListener('load', () => setTimeout(showTeleportDebug, 1000));
+
+function performTeleport(destination) {
+    // 1. Atualiza a posição lógica
+    // Nota: Como 'playerPosition' é definida dentro de startGame, 
+    // precisamos garantir que estamos alterando o objeto certo.
+    // O jeito mais fácil sem refatorar tudo é mover o boneco visualmente e rezar para a variável global bater,
+    // MAS o ideal é passar 'playerPosition' como argumento se der erro.
+    
+    // Vamos tentar atualizar direto os estilos primeiro:
+    const player = document.getElementById('player');
+    const gameMap = document.getElementById('game-map');
+    const container = document.getElementById('game-container');
+
+    // Atualiza a variável global (se ela for acessível aqui, senão precisa passar por parametro)
+    // Se der erro "playerPosition is not defined", me avise que ajustamos.
+    // Assumindo que você seguiu minha dica anterior de passar playerPosition:
+    
+    // FORMA SEGURA: Mover visualmente e atualizar a variável
+    // (Se playerPosition for local da startGame, você precisará movê-la para o escopo global no topo do arquivo)
+    
+    // --- IMPORTANTE: Mova a declaração 'let playerPosition = ...' para o TOPO do arquivo game.js
+    // para que esta função consiga acessá-la.
+    
+    playerPosition.x = destination.x;
+    playerPosition.y = destination.y;
+
+    // 2. Move o Jogador Visualmente
+    player.style.left = playerPosition.x + 'px';
+    player.style.top = playerPosition.y + 'px';
+
+    // 3. Atualiza a Câmera (Centraliza no novo local)
+    const cameraWidth = container.clientWidth;
+    const cameraHeight = container.clientHeight;
+    // 200 e 229 são largura/altura do boneco
+    let mapTranslateX = -playerPosition.x + (cameraWidth / 2) - (200 / 2);
+    let mapTranslateY = -playerPosition.y + (cameraHeight / 2) - (229 / 2);
+
+    gameMap.style.transform = `translate(${mapTranslateX}px, ${mapTranslateY}px)`;
+    
+    // Feedback sonoro ou visual opcional
+    // showCustomAlert("Teleporte realizado!", "info");
 }
